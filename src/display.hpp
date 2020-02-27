@@ -5,43 +5,6 @@
 
 U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, 13, 11, 10, 8);
 
-class display_class
-{
-private:
-  
-public:
- void init() {
-    u8g2.begin();
-    return;
-  }
-
-  void u8g2_prepare(void) {
-    u8g2.setFont(u8g2_font_6x10_tf);
-    u8g2.setFontRefHeightExtendedText();
-    u8g2.setDrawColor(1);
-    u8g2.setFontPosTop();
-    u8g2.setFontDirection(0);
-  }
-
-  void draw(void) {
-    u8g2_prepare();
-    switch(draw_state >> 3) {
-      case 0: u8g2_box_frame(draw_state&7); break;
-      case 1: u8g2_disc_circle(draw_state&7); break;
-      case 2: u8g2_r_frame(draw_state&7); break;
-      case 3: u8g2_string(draw_state&7); break;
-      case 4: u8g2_line(draw_state&7); break;
-      case 5: u8g2_triangle(draw_state&7); break;
-      case 6: u8g2_ascii_1(); break;
-      case 7: u8g2_ascii_2(); break;
-      case 8: u8g2_extra_page(draw_state&7); break;
-      case 9: u8g2_bitmap_modes(0); break;
-      case 10: u8g2_bitmap_modes(1); break;
-      case 11: u8g2_bitmap_overlay(draw_state&7); break;
-  }
-}
-} display;
-
 void u8g2_box_frame(uint8_t a) {
   u8g2.drawStr( 0, 0, "drawBox");
   u8g2.drawBox(5,10,20,10);
@@ -209,3 +172,40 @@ void u8g2_bitmap_modes(uint8_t transparent) {
 }
 
 uint8_t draw_state = 0;
+
+class display_class
+{
+private:
+  
+public:
+ void init() {
+    u8g2.begin();
+    return;
+  }
+
+  void u8g2_prepare(void) {
+    u8g2.setFont(u8g2_font_6x10_tf);
+    u8g2.setFontRefHeightExtendedText();
+    u8g2.setDrawColor(1);
+    u8g2.setFontPosTop();
+    u8g2.setFontDirection(0);
+  }
+
+  void draw(void) {
+    u8g2_prepare();
+    switch(draw_state >> 3) {
+      case 0: u8g2_box_frame(draw_state&7); break;
+      case 1: u8g2_disc_circle(draw_state&7); break;
+      case 2: u8g2_r_frame(draw_state&7); break;
+      case 3: u8g2_string(draw_state&7); break;
+      case 4: u8g2_line(draw_state&7); break;
+      case 5: u8g2_triangle(draw_state&7); break;
+      case 6: u8g2_ascii_1(); break;
+      case 7: u8g2_ascii_2(); break;
+      case 8: u8g2_extra_page(draw_state&7); break;
+      case 9: u8g2_bitmap_modes(0); break;
+      case 10: u8g2_bitmap_modes(1); break;
+      case 11: u8g2_bitmap_overlay(draw_state&7); break;
+  }
+}
+} display;

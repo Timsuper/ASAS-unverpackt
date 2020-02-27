@@ -10,27 +10,13 @@
 void setup() {
   Serial.begin(9600);
   SPI.begin();
-  /*
-  rfid.PCD_Init();
-
-  for (byte i = 0; i <= 3; i++) {
-    key.keyByte[i] = 0xFF;
-  }
-
-  Serial.println(F("This code scan the MIFARE Classic NUID."));
-  Serial.print(F("Using the following key:"));
-  printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
-
-  Serial.println("");
-  Serial.print("rfid.uid.size= ");
-  Serial.println(rfid.uid.size);
-  */
-  loadcell_test.loadcell_test_init();
+  
+  rfid_helper.init();
+  loadcell.init();
 }
 
 void loop() {
   while(!Serial.available()) {}
-  loadcell_test.loadcell_case_handler_test();
   /*
   if (!rfid.PICC_IsNewCardPresent())
   return;

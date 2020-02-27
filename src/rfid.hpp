@@ -10,7 +10,18 @@ MFRC522 rfid(SS_PIN, RST_PIN); // Klasseninstanz
 
 MFRC522::MIFARE_Key key;
 
-byte nuidPICC[4];
+class rfid_helper_class {
+private:
 
-byte vaild_card_1[] = {0xD4, 0xFD, 0x3B, 0x1E};
-//byte vaild_card_2[] = {0x00, 0x00, 0x00, 0x00};
+public:
+    byte nuidPICC[4];
+    byte vaild_card_1[4] = {0xD4, 0xFD, 0x3B, 0x1E};
+
+    void init() {
+        rfid.PCD_Init();
+
+        for (byte i = 0; i <= 3; i++) {
+            key.keyByte[i] = 0xFF;
+        }
+    }
+} rfid_helper;
