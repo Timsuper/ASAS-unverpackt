@@ -11,8 +11,10 @@ void setup() {
   Serial.begin(9600);
   SPI.begin();
   
-  rfid_helper.init();
-  loadcell.init();
+  display.init();
+  display.display_mode_normal();
+  //rfid_helper.init();
+  //loadcell.init();
 }
 
 void loop() {
