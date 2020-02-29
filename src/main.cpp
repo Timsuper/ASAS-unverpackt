@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SPI.h>
+#include <Wire.h>
 
 #include <MFRC522.h> //RFID
 #include <HX711.h> //Wiegezelle
@@ -10,15 +11,15 @@
 void setup() {
   Serial.begin(9600);
   SPI.begin();
-  
+
   display.init();
-  display.display_mode_normal();
+
   //rfid_helper.init();
   //loadcell.init();
 }
 
 void loop() {
-  while(!Serial.available()) {}
+  display.display_mode_normal();
   /*
   if (!rfid.PICC_IsNewCardPresent())
   return;

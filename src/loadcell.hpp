@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Wire.h>
 #include <SPI.h>
 
 #include <HX711.h> //Wiegezelle
