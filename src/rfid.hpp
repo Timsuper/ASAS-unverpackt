@@ -25,4 +25,11 @@ public:
             key.keyByte[i] = 0xFF;
         }
     }
+
+    bool compare_rfid_bytes(byte card1[4], byte card2[4]){
+        for (int i=0; i<=3; i++) {
+            if (card1[i] != card2[i]) return false;
+        }
+        return true;
+    }
 } rfid_helper;
