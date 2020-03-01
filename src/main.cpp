@@ -19,7 +19,8 @@ void setup() {
 }
 
 void loop() {
-  display.display_mode_normal();
+  display.display_mode_empty_container();
+
   /*
   if (!rfid.PICC_IsNewCardPresent())
   return;
