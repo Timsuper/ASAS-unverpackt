@@ -5,7 +5,7 @@
 #include <MFRC522.h> //RFID
 
 #define SS_PIN 53 // Slave-Select (RFID)
-#define RST_PIN 5 // Rest (RFID)
+#define RST_PIN 9 // Rest (RFID)
  
 MFRC522 rfid(SS_PIN, RST_PIN); // Klasseninstanz
 

@@ -13,15 +13,30 @@ float price_per_g = 0.25;
 int price_per_X_g = 100;
 
 const int schloss_pin = 4;
-const int kontaktschalter_pin = 0;
+const int kontaktschalter_pin = 6;
+
+void open_lock(int time = 500) {
+  // Schloss für time ms öffnen
+  digitalWrite(schloss_pin, true);
+  delay(time);
+  digitalWrite(schloss_pin, false);
+}
+
+bool get_switch() {
+  // Prüfen ob Box geschlossen wurde
+
+}
 
 void setup() {
   Serial.begin(9600);
   SPI.begin();
 
-  //Schloss Pin
+  // Schloss Pin
   pinMode(schloss_pin, OUTPUT);
   digitalWrite(schloss_pin, false);
+
+  // Kontaktschalter Pin
+  pinMode(kontaktschalter_pin, INPUT_PULLUP);
 
   display.init();
   rfid_helper.init();
@@ -69,29 +84,34 @@ void loop() {
     double first_weight = loadcell.get_units();
 
     // Schloss öffnen
-    digitalWrite(schloss_pin, true);
-    delay(500);
-    digitalWrite(schloss_pin, false);
-
-    // Gewicht kontinuierlich ermitteln
-    double current_weight = loadcell.get_units();
-
-    // Preisberechnung kontinuierlich
-    float current_price = current_weight * price_per_g;
-
-    // Display kontinutierlich
-    display.display_mode_opened_case(kundennummer, 0);
+    open_lock();
 
     // Schloss zu?
+    while (get_switch() == false) {
+      // Gewicht kontinuierlich ermitteln
+      double current_weight = loadcell.get_units();
+
+      // Preisberechnung kontinuierlich
+      float current_price = current_weight * price_per_g;
+
+      // Display kontinutierlich
+      display.display_mode_opened_case(kundennummer, current_price);  
+    }
 
     // Gewicht neu ermitteln in loadcell
+    double final_weight = loadcell.get_units();
 
     // Preisberechnung final
+    float final_price = final_weight * price_per_g;
 
     // Display Abrechnung
-    display.display_mode_closed_case(kundennummer, 0, 0);
+    display.display_mode_closed_case(kundennummer, final_price, final_weight);
 
     // Gewicht 0 oder niedrig? -> Box leer anzeigen
+    if (final_weight <= 100) {
+        display.display_mode_empty_container();
+        while (true) {}
+    }
 
     delay(5000);
   }

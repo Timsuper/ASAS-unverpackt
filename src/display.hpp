@@ -47,7 +47,7 @@ public:
     return;
   }
 
-  void display_mode_normal(String productname = "Produktname", int price_per_X_g = 100, float price = 0.00, String lower_text = "Bitte Karte auflegen") {
+  void display_mode_normal(String productname = "none", int price_per_X_g = 100, float price = 0.00, String lower_text = "Bitte Karte auflegen") {
     prepare();
 
     String price_per_X_str;
@@ -82,7 +82,7 @@ public:
     u8g2.sendBuffer();
   }
 
-  void display_mode_opened_case(String kundennummer, float estimated_price) {
+  void display_mode_opened_case(String kundennummer = "none", float estimated_price = 0.00) {
     prepare();
     const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
 
