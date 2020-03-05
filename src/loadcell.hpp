@@ -1,8 +1,17 @@
 #include <Arduino.h>
-#include <Wire.h>
 #include <SPI.h>
 
 #include <HX711.h> //Wiegezelle
+
+/* 
+HX711 nutzt SW SPI (2 Wire)
+
+DOUT_1 - 2
+SCK_1 - 3
+
+DOUT_2 - 4
+SCK_2 - 5
+*/
 
 class loadcell_class {
 private:

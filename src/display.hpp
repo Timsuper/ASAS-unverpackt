@@ -5,9 +5,15 @@
 #include <U8g2lib.h> //Display
 
 /*
-V0,Contrast - D7 (PWM)
-ClockSelect, RS, D/I - D53
-Reset - D8
+SPI:
+MISO - nicht belegt
+MOSI/RW - 51
+SCK - 52
+
+frei waelbar:
+V0, Contrast - D7 (PWM / Poti)
+CS, RS, D/I, SS, SDA - D53
+RST - D8
 */
 
 //Full Buffer

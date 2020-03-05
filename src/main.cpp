@@ -8,11 +8,27 @@
 
 #include <helper.hpp>
 
+/*
+Pinout Arduino Mega
+
+SPI:
+MISO - 50
+MOSI - 51
+SCK - 52
+
+frei waelbar:
+SS/SDA - 53
+
+Eigene:
+Kontaktschalter - D6 INPUT PULLUP
+Schlosspin - D7 OUTPUT
+*/
+
 String product_name = "Test";
 float price_per_g = 0.25;
 int price_per_X_g = 100;
 
-const int schloss_pin = 4;
+const int schloss_pin = 7;
 const int kontaktschalter_pin = 6;
 
 void open_lock(int time = 500) {
