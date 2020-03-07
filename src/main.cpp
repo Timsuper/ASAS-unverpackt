@@ -22,6 +22,9 @@ SS/SDA - 53
 Eigene:
 Kontaktschalter - D6 INPUT PULLUP
 Schlosspin - D7 OUTPUT
+
+Mögliche Optimierungen:
+- millis() Code gegen overflows umschreiben
 */
 
 String product_name = "Test";
@@ -131,27 +134,26 @@ void loop() {
 
     // Schloss öffnen
     open_lock();
-
-    if (contactpin_closed == false) {
-        display.mode_error();
-        while (true) {}
-    }
     
     detachInterrupt(digitalPinToInterrupt(contactpin));
     attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_rising, RISING);
 
     // Schloss zu?
+    int messure_time = millis();
+    double current_weight;
+    float current_price;
     while (contactpin_closed == false) {
-      // Gewicht kontinuierlich ermitteln
-      double current_weight = loadcell.get_units();
-
-      // Preisberechnung kontinuierlich
-      float current_price = current_weight * price_per_g;
-
+      // Sicherstellen, dass nur jede Sekunde gemessen wird
+      // Der Displaybuffer muss bedient werden!
+      if (int new_messure_time = millis()-messure_time >= 1000) {
+        // Gewicht kontinuierlich ermitteln
+        current_weight = loadcell.get_units();
+        // Preisberechnung kontinuierlich
+        current_price = current_weight * price_per_g;
+        messure_time = new_messure_time;
+      }
       // Display kontinutierlich
-      display.mode_opened_case(kundennummer, current_price);
-
-      delay(1000);
+      display.mode_opened_case(kundennummer, current_price, current_weight);
     }
 
     detachInterrupt(digitalPinToInterrupt(contactpin));
