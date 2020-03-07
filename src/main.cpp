@@ -25,22 +25,29 @@ Schlosspin - D7 OUTPUT
 */
 
 String product_name = "Test";
-float price_per_g = 0.25;
-int price_per_X_g = 100;
+const float price_per_g = 0.25;
+const int price_per_X_g = 100;
 
-const int schloss_pin = 7;
-const int kontaktschalter_pin = 6;
+const int doorlock_pin = 7;
+const int contactpin = 18; // erlaubt: 2, 3, 18, 19, 20, 21
 
-void open_lock(int time = 500) {
+bool contactpin_closed = false;
+
+int debug_milis_timer = 0;
+
+void open_lock(int time = 200) {
   // Schloss für time ms öffnen
-  digitalWrite(schloss_pin, true);
+  digitalWrite(doorlock_pin, true);
   delay(time);
-  digitalWrite(schloss_pin, false);
+  digitalWrite(doorlock_pin, false);
 }
 
-bool get_switch() {
-  // Prüfen ob Box geschlossen wurde
+void ISR_contactpin_rising() {
+  contactpin_closed = true;
+}
 
+void ISR_contactpin_falling() {
+  contactpin_closed = false;
 }
 
 void setup() {
@@ -48,19 +55,42 @@ void setup() {
   SPI.begin();
 
   // Schloss Pin
-  pinMode(schloss_pin, OUTPUT);
-  digitalWrite(schloss_pin, false);
+  //pinMode(doorlock_pin, OUTPUT);
+  //digitalWrite(doorlock_pin, false);
 
   // Kontaktschalter Pin
-  pinMode(kontaktschalter_pin, INPUT_PULLUP);
+  //pinMode(contactpin, INPUT_PULLUP);
 
   display.init();
-  rfid_helper.init();
-  loadcell.init();
+  //rfid_helper.init();
+  //loadcell.init();
+
+  debug_milis_timer = millis();
+  Serial.println("setup() abgeschlossen");
 }
 
 void loop() {
-  display.display_mode_normal(product_name, price_per_X_g, price_per_g*price_per_X_g);
+  int new_debug_millis_timer = millis();
+  const int delay_time = 3000;
+  if (new_debug_millis_timer-debug_milis_timer < 1*delay_time) {
+    display.mode_normal();
+  } else if (new_debug_millis_timer-debug_milis_timer < 2*delay_time) {
+    display.mode_opened_case();
+  } else if (new_debug_millis_timer-debug_milis_timer < 3*delay_time) {
+    display.mode_closed_case();
+  } else if (new_debug_millis_timer-debug_milis_timer < 4*delay_time) {
+    display.mode_empty_container();
+  } else if (new_debug_millis_timer-debug_milis_timer < 5*delay_time) {
+    display.mode_error();
+  } else if (new_debug_millis_timer-debug_milis_timer < 6*delay_time) {
+    display.mode_error("Errorcode xyz");
+  } else {
+    debug_milis_timer = new_debug_millis_timer;
+  }
+
+  return;
+  
+  display.mode_normal(product_name, price_per_X_g, price_per_g*price_per_X_g);
 
   if (!rfid.PICC_IsNewCardPresent())
   return;
@@ -102,8 +132,16 @@ void loop() {
     // Schloss öffnen
     open_lock();
 
+    if (contactpin_closed == false) {
+        display.mode_error();
+        while (true) {}
+    }
+    
+    detachInterrupt(digitalPinToInterrupt(contactpin));
+    attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_rising, RISING);
+
     // Schloss zu?
-    while (get_switch() == false) {
+    while (contactpin_closed == false) {
       // Gewicht kontinuierlich ermitteln
       double current_weight = loadcell.get_units();
 
@@ -111,8 +149,13 @@ void loop() {
       float current_price = current_weight * price_per_g;
 
       // Display kontinutierlich
-      display.display_mode_opened_case(kundennummer, current_price);  
+      display.mode_opened_case(kundennummer, current_price);
+
+      delay(1000);
     }
+
+    detachInterrupt(digitalPinToInterrupt(contactpin));
+    attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_falling, FALLING);
 
     // Gewicht neu ermitteln in loadcell
     double final_weight = loadcell.get_units();
@@ -121,11 +164,11 @@ void loop() {
     float final_price = final_weight * price_per_g;
 
     // Display Abrechnung
-    display.display_mode_closed_case(kundennummer, final_price, final_weight);
+    display.mode_closed_case(kundennummer, final_price, final_weight);
 
     // Gewicht 0 oder niedrig? -> Box leer anzeigen
     if (final_weight <= 100) {
-        display.display_mode_empty_container();
+        display.mode_empty_container();
         while (true) {}
     }
 

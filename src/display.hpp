@@ -30,6 +30,7 @@ public:
   int displaywidth = u8g2.getDisplayWidth();
 
   void init() {
+    Serial.print("display -> ");
     Serial.print("height: ");
     Serial.print(displayheight);
     Serial.print(" width: ");
@@ -50,10 +51,11 @@ public:
     u8g2.setFontPosTop();
     u8g2.setFontDirection(0);
     u8g2.setBitmapMode(1);
+    u8g2.setFontMode(1);
     return;
   }
 
-  void display_mode_normal(String productname = "none", int price_per_X_g = 100, float price = 0.00, String lower_text = "Bitte Karte auflegen") {
+  void mode_normal(String productname = "Produktname", int price_per_X_g = 100, float price = 0.00, String lower_text = "Bitte Karte auflegen") {
     prepare();
 
     String price_per_X_str;
@@ -88,7 +90,7 @@ public:
     u8g2.sendBuffer();
   }
 
-  void display_mode_opened_case(String kundennummer = "none", float estimated_price = 0.00) {
+  void mode_opened_case(String kundennummer = "KdNr", float estimated_price = 0.00, int estimated_weight = 0) {
     prepare();
     const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
 
@@ -104,10 +106,14 @@ public:
 
     u8g2.drawStr(5, height, "Preis: ");
     u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
-    height += text_height+10;
+    height += text_height+1;
 
-    u8g2.drawFrame(2, height, displaywidth-4, (text_height+1)*2+4);
-    height += 2;
+    u8g2.drawStr(5, height, "Gewicht: ");
+    u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
+    height += text_height+2;
+
+    u8g2.drawFrame(0, height, displaywidth, displayheight-height);
+    height += 1;
 
     u8g2.drawStr(5, height, "Produkt entnehmen");
     height += text_height+1;
@@ -117,7 +123,7 @@ public:
     u8g2.sendBuffer();
   }
 
-  void display_mode_closed_case(String kundennummer = "none", float price = 0.00, int weight_in_g = 0) {
+  void mode_closed_case(String kundennummer = "KdNr", float price = 0.00, int weight_in_g = 0) {
     prepare();
     const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
 
@@ -129,6 +135,7 @@ public:
     weight_str = String(weight_in_g, 10);
 
     int height = 0;
+
     u8g2.drawStr(5, 0, "Kundennr:");
     u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
     height += text_height+1;
@@ -149,20 +156,20 @@ public:
     u8g2.sendBuffer();
   }
 
-  void display_mode_error() {
+  void mode_error(String error_code = "") {
     prepare();
     const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
 
     int height = 0;
 
-    u8g2.drawFrame(2, height, displaywidth-2, 4+4*(text_height+1)+12);
+    u8g2.drawFrame(0, 0, displaywidth, displayheight);
     height += 2;
 
     u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Fehler an der Anlage")/2, height, "Fehler an der Anlage");
     height += text_height+2;
 
-    u8g2.drawLine(2, height, displaywidth-2, height);
-    height += 10;
+    u8g2.drawLine(0, height, displaywidth, height);
+    height += 2;
     
     u8g2.drawStr(5, height, "Wir versuchen das");
     height += text_height+1;
@@ -171,24 +178,27 @@ public:
     height += text_height+1;
 
     u8g2.drawStr(5, height, "loesen.");
+    height += text_height+1;
+
+    u8g2.drawStr(5, height, error_code.c_str());
 
     u8g2.sendBuffer();
   }
 
-  void display_mode_empty_container() {
+  void mode_empty_container() {
     prepare();
     const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
 
     int height = 0;
 
-    u8g2.drawFrame(2, height, displaywidth-2, 4+4*(text_height+1)+12);
+    u8g2.drawFrame(0, 0, displaywidth, displayheight);
     height += 2;
 
     u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Box leer")/2, height, "Box leer");
     height += text_height+2;
 
-    u8g2.drawLine(2, height, displaywidth-2, height);
-    height += 10;
+    u8g2.drawLine(0, height, displaywidth, height);
+    height += 2;
     
     u8g2.drawStr(5, height, "Ein Mitarbeiter");
     height += text_height+1;
