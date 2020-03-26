@@ -17,7 +17,7 @@ RST - D8
 */
 
 //Full Buffer
-U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R2, 53, 8);
+U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R0, 53, 8);
 
 //Picture Loop
 // U8G2_ST7920_128X64_1_HW_SPI u8g2(U8G2_R0, /* CS=*/ 53, /* reset=*/ 8);
@@ -36,10 +36,8 @@ public:
     Serial.print(" width: ");
     Serial.println(displaywidth);
 
-    pinMode(7, OUTPUT);
-    analogWrite(7, 185);
-
     u8g2.begin();
+    Serial.println("display init() abgeschlossen");
     return;
   }
 
@@ -79,7 +77,7 @@ public:
     height += text_height+3;
 
     u8g2.drawStr(5, height, ("Preis / " + price_per_X_str + ":").c_str());
-    height += text_height+3;
+    height += text_height+5;
 
     price_str = price_str + " Euro";
     u8g2.drawStr(displaywidth-u8g2.getStrWidth(price_str.c_str()), height, price_str.c_str());
@@ -104,21 +102,35 @@ public:
     u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
     height += text_height+1;
 
-    u8g2.drawStr(5, height, "Preis: ");
-    u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
-    height += text_height+1;
+    if (estimated_price != 0) {
+      u8g2.drawStr(5, height, "Preis: ");
+      u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
+      height += text_height+1;
+    }
 
-    u8g2.drawStr(5, height, "Gewicht: ");
-    u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
-    height += text_height+2;
+    if (estimated_weight != 0) {
+      u8g2.drawStr(5, height, "Gewicht: ");
+      u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
+      height += text_height+1;
+    }
 
-    u8g2.drawFrame(0, height, displaywidth, displayheight-height);
-    height += 1;
+    if (estimated_price != 0 && estimated_weight != 0) {
+        u8g2.drawFrame(0, height, displaywidth, displayheight-height);
+        height += 1;
 
-    u8g2.drawStr(5, height, "Produkt entnehmen");
-    height += text_height+1;
+        u8g2.drawStr(5, height, "Produkt entnehmen");
+        height += text_height+1;
 
-    u8g2.drawStr(5, height, "und Box schliessen.");
+        u8g2.drawStr(5, height, "und Box schliessen.");
+        height += text_height+1;
+    } else {
+        height ++;
+        u8g2.drawFrame(10, height, displaywidth-20, height+text_height);
+        height += 5;
+
+        u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Einen Moment")/2, height, "Einen Moment");
+        height += text_height+1;
+    }
 
     u8g2.sendBuffer();
   }
@@ -128,11 +140,11 @@ public:
     const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
 
     String price_str;
-    price_str = String(price, 2);
+    price_str = String(abs(price), 2);
     price_str.replace(".", ",");
 
     String weight_str;
-    weight_str = String(weight_in_g, 10);
+    weight_str = String(abs(weight_in_g), 10);
 
     int height = 0;
 
@@ -177,10 +189,36 @@ public:
     u8g2.drawStr(5, height, "Problem umgehend zu");
     height += text_height+1;
 
-    u8g2.drawStr(5, height, "loesen.");
+    u8g2.drawStr(5, height, "beheben.");
     height += text_height+1;
 
     u8g2.drawStr(5, height, error_code.c_str());
+
+    u8g2.sendBuffer();
+  }
+
+  void mode_unknown_card() {
+    prepare();
+    const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
+
+    int height = 0;
+
+    u8g2.drawFrame(0, 0, displaywidth, displayheight);
+    height += 2;
+
+    u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Karte unbekannt")/2, height, "Karte unbekannt");
+    height += text_height+2;
+
+    u8g2.drawLine(0, height, displaywidth, height);
+    height += 2;
+    
+    u8g2.drawStr(5, height, "Diese Karte ist");
+    height += text_height+1;
+
+    u8g2.drawStr(5, height, "nicht im System");
+    height += text_height+1;
+
+    u8g2.drawStr(5, height, "hinterlegt.");
 
     u8g2.sendBuffer();
   }
@@ -203,10 +241,10 @@ public:
     u8g2.drawStr(5, height, "Ein Mitarbeiter");
     height += text_height+1;
 
-    u8g2.drawStr(5, height, "wird fuer Nachschub");
+    u8g2.drawStr(5, height, "wird Ware");
     height += text_height+1;
 
-    u8g2.drawStr(5, height, "sorgen.");
+    u8g2.drawStr(5, height, "nachlegen.");
 
     u8g2.sendBuffer();
   }

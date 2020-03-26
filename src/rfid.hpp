@@ -26,7 +26,7 @@ private:
 
 public:
     byte nuidPICC[4];
-    byte vaild_card_1[4] = {0xD4, 0xFD, 0x3B, 0x1E};
+    byte vaild_card_1[4] = {0xF9, 0x06, 0xCB, 0x7E};
 
     void init() {
         rfid.PCD_Init();
@@ -34,6 +34,8 @@ public:
         for (byte i = 0; i <= 3; i++) {
             key.keyByte[i] = 0xFF;
         }
+
+        Serial.println("RFID init() abgeschlossen");
     }
 
     bool compare_rfid_bytes(byte card1[4], byte card2[4]){
