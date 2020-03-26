@@ -54,7 +54,7 @@ void ISR_contactpin_falling() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   SPI.begin();
 
   // Schloss Pin
@@ -141,6 +141,7 @@ void loop() {
 
     // Gewicht ermitteln in loadcell (vor öffnen -> einmal!)
     loadcell.tare();
+    double first_weight = loadcell.get_units();
 
     contactpin_closed = false;
     // Schloss öffnen
@@ -169,10 +170,10 @@ void loop() {
     //attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_falling, FALLING);
 
     // Gewicht neu ermitteln in loadcell
-    double final_weight = abs(loadcell.get_units());
+    double final_weight = abs(first_weight-loadcell.get_units());
 
     // Preisberechnung final
-    float final_price = abs(final_weight * price_per_g);
+    float final_price = abs((first_weight-final_weight) * price_per_g);
 
     // Display Abrechnung
     display.mode_closed_case(kundennummer, final_price, final_weight);
