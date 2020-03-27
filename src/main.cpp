@@ -6,7 +6,9 @@
 #include <HX711.h> //Wiegezelle
 #include <U8g2lib.h> //Display
 
-#include <helper.hpp>
+#include <loadcell.hpp>
+#include <rfid.hpp>
+#include <display.hpp>
 
 /*
 Pinout Arduino Mega
@@ -34,7 +36,7 @@ const int price_per_X_g = 100;
 const int doorlock_pin = 7;
 const int contactpin = 18; // erlaubt: 2, 3, 18, 19, 20, 21
 
-bool contactpin_closed = false;
+volatile bool contactpin_status = true;
 
 int debug_milis_timer = 0;
 
@@ -46,15 +48,15 @@ void open_lock(int time = 100) {
 }
 
 void ISR_contactpin_rising() {
-  contactpin_closed = true;
+  contactpin_status = true;
 }
 
 void ISR_contactpin_falling() {
-  contactpin_closed = false;
+  contactpin_status = false;
 }
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   SPI.begin();
 
   // Schloss Pin
@@ -70,32 +72,6 @@ void setup() {
 }
 
 void loop() {
-  /*
-  int new_debug_millis_timer = millis();
-  const int delay_time = 3000;
-  if (new_debug_millis_timer-debug_milis_timer < 1*delay_time) {
-    display.mode_normal();
-    Serial.println("display_normal");
-  } else if (new_debug_millis_timer-debug_milis_timer < 2*delay_time) {
-    display.mode_opened_case();
-    Serial.println("display_opened_case");
-  } else if (new_debug_millis_timer-debug_milis_timer < 3*delay_time) {
-    display.mode_closed_case();
-    Serial.println("display_closed_case");
-  } else if (new_debug_millis_timer-debug_milis_timer < 4*delay_time) {
-    display.mode_empty_container();
-    Serial.println("display_empty_container");
-  } else if (new_debug_millis_timer-debug_milis_timer < 5*delay_time) {
-    display.mode_error();
-    Serial.println("display_error");
-  } else if (new_debug_millis_timer-debug_milis_timer < 6*delay_time) {
-    display.mode_error("Errorcode xyz");
-    Serial.println("display_error_xyz");
-  } else {
-    debug_milis_timer = new_debug_millis_timer;
-  }
-  */
-  
   display.mode_normal(product_name, price_per_X_g, price_per_g*price_per_X_g);
 
   if (!rfid.PICC_IsNewCardPresent())
@@ -117,63 +93,77 @@ void loop() {
     rfid.uid.uidByte[1] != rfid_helper.nuidPICC[1] || 
     rfid.uid.uidByte[2] != rfid_helper.nuidPICC[2] || 
     rfid.uid.uidByte[3] != rfid_helper.nuidPICC[3] ) {
-    // Store new NUID into nuidPICC array
+    // schauen ob eine neue Karte erkannt wurde
     for (byte i = 0; i <= 3; i++) {
       rfid_helper.nuidPICC[i] = rfid.uid.uidByte[i];
     }
-    Serial.println(F("A new card has been detected."));
-    rfid_test.print_nuid(rfid.uid.uidByte, rfid.uid.size);
+    Serial.println(F("Neue Karte erkannt"));
+    rfid_helper.print_nuid(rfid.uid.uidByte, rfid.uid.size);
   }
-  else Serial.println(F("Card read previously."));
-
-  // Interrupts noch vor der Erkennung einer RFID Karte ändern
-  // da das attachen von Interrupts Zeitintensiv ist
-  detachInterrupt(digitalPinToInterrupt(contactpin));
-  attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_rising, RISING);
+  else Serial.println(F("Vorherige Karte erkannt"));
   
-  //wenn Karte fest hinterlegt
+  // wenn Karte fest hinterlegt
+  // kein Anlern-System implementiert
   if (rfid_helper.compare_rfid_bytes(rfid_helper.nuidPICC, rfid_helper.vaild_card_1)) {
     // Kundennummer formatieren
+    // Die Kundennummer ist hier exemplarisch die Seriennummer des MIFARE RFID Chip genommen
+    // (im HEX Format, da kürzer für Display)
+    // Bei einer realen Implementation sollten die Karten vorher beschrieben werden!
     String kundennummer;
     kundennummer = String(rfid_helper.nuidPICC[0], HEX) + " " + String(rfid_helper.nuidPICC[1], HEX) + " " + String(rfid_helper.nuidPICC[2], HEX) + " " + String(rfid_helper.nuidPICC[3], HEX);
 
-    display.mode_opened_case(kundennummer);
+    display.mode_please_wait(kundennummer);
 
-    // Gewicht ermitteln in loadcell (vor öffnen -> einmal!)
+    // Gewicht ermitteln in loadcell
     loadcell.tare();
-    double first_weight = loadcell.get_units();
 
-    contactpin_closed = false;
-    // Schloss öffnen
-    open_lock();
-
-    // Schloss zu?
     int messure_time = millis();
     double current_weight = 0;
     float current_price = 0;
 
-    while (contactpin_closed == false) {
+    attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_falling, FALLING);
+
+    // Schloss öffnen
+    open_lock();
+
+    // Test begin
+    while (contactpin_status == true) {
+      Serial.println("closed");
+    }
+
+    Serial.println("opened");
+    // Test ende
+
+    detachInterrupt(digitalPinToInterrupt(contactpin));
+
+    // stellt das schließen der Box fest und ändert eine Bool Var
+    attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_rising, RISING);
+
+    // Bis die Box geschlossen wird verbleibt das Programm hier
+    while (contactpin_status == false) {
       // Sicherstellen, dass nur jede Sekunde gemessen wird
-      // Der Displaybuffer muss bedient werden!
-      if (int new_messure_time = millis()-messure_time >= 1000) {
+      // messure_time == new_messure_time ist nur beim ersten mal gleich!
+      // dies sorgt dafür, dass die erste Messung sofort erfolgt
+      if (int new_messure_time = millis()-messure_time >= 1000 || messure_time == new_messure_time) {
         // Gewicht kontinuierlich ermitteln
+        // Zeigt dem Kunden Informationen während der Entnahme
         current_weight = abs(loadcell.get_units());
         // Preisberechnung kontinuierlich
         current_price = abs(current_weight * price_per_g);
         messure_time = new_messure_time;
+        display.mode_opened_case(kundennummer, current_price, current_weight);
       }
-      // Display kontinutierlich
-      display.mode_opened_case(kundennummer, current_price, current_weight);
     }
 
-    //detachInterrupt(digitalPinToInterrupt(contactpin));
-    //attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_falling, FALLING);
+    display.mode_please_wait(kundennummer);
+
+    detachInterrupt(digitalPinToInterrupt(contactpin));
 
     // Gewicht neu ermitteln in loadcell
-    double final_weight = abs(first_weight-loadcell.get_units());
+    double final_weight = abs(loadcell.get_units());
 
     // Preisberechnung final
-    float final_price = abs((first_weight-final_weight) * price_per_g);
+    float final_price = abs(final_weight * price_per_g);
 
     // Display Abrechnung
     display.mode_closed_case(kundennummer, final_price, final_weight);
@@ -192,9 +182,6 @@ void loop() {
     delay(5000);
   }
 
-  // Halt PICC
   rfid.PICC_HaltA();
-
-  // Stop encryption on PCD, notwending um neue Karte lesen zu koennen
-  rfid.PCD_StopCrypto1();
+  rfid.PCD_StopCrypto1(); // bei realer Implementation andere verwenden, da bereits genackt
 }

@@ -23,7 +23,19 @@ MFRC522::MIFARE_Key key;
 
 class rfid_helper_class {
 private:
+  void printHex(byte *buffer, byte bufferSize) {
+    for (byte i = 0; i < bufferSize; i++) {
+      Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+      Serial.print(buffer[i], HEX);
+    }
+  }
 
+  void printDec(byte *buffer, byte bufferSize) {
+    for (byte i = 0; i < bufferSize; i++) {
+      Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+      Serial.print(buffer[i], DEC);
+    }
+  }
 public:
     byte nuidPICC[4];
     byte vaild_card_1[4] = {0xF9, 0x06, 0xCB, 0x7E};
@@ -43,5 +55,15 @@ public:
             if (card1[i] != card2[i]) return false;
         }
         return true;
+    }
+
+    void print_nuid(byte *buffer, byte bufferSize) {
+        Serial.println(F("The NUID tag is:"));
+        Serial.print(F("In hex: "));
+        printHex(buffer, bufferSize);
+        Serial.println();
+        Serial.print(F("In dec: "));
+        printDec(buffer, bufferSize);
+        Serial.println();
     }
 } rfid_helper;

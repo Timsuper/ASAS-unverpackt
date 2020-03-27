@@ -102,35 +102,42 @@ public:
     u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
     height += text_height+1;
 
-    if (estimated_price != 0) {
-      u8g2.drawStr(5, height, "Preis: ");
-      u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
-      height += text_height+1;
-    }
+    u8g2.drawStr(5, height, "Preis: ");
+    u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
+    height += text_height+1;
 
-    if (estimated_weight != 0) {
-      u8g2.drawStr(5, height, "Gewicht: ");
-      u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
-      height += text_height+1;
-    }
+    u8g2.drawStr(5, height, "Gewicht: ");
+    u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
+    height += text_height+1;
 
-    if (estimated_price != 0 && estimated_weight != 0) {
-        u8g2.drawFrame(0, height, displaywidth, displayheight-height);
-        height += 1;
+    u8g2.drawFrame(0, height, displaywidth, displayheight-height);
+    height += 1;
 
-        u8g2.drawStr(5, height, "Produkt entnehmen");
-        height += text_height+1;
+    u8g2.drawStr(5, height, "Produkt entnehmen");
+    height += text_height+1;
 
-        u8g2.drawStr(5, height, "und Box schliessen.");
-        height += text_height+1;
-    } else {
-        height ++;
-        u8g2.drawFrame(10, height, displaywidth-20, height+text_height);
-        height += 5;
+    u8g2.drawStr(5, height, "und Box schliessen.");
+    height += text_height+1;
 
-        u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Einen Moment")/2, height, "Einen Moment");
-        height += text_height+1;
-    }
+    u8g2.sendBuffer();
+  }
+
+  void mode_please_wait(String kundennummer = "KdNr") {
+    prepare();
+    const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
+
+    int height = 0;
+
+    u8g2.drawStr(5, 0, "Kundennr:");
+    u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
+    height += text_height+1;
+
+    height ++;
+    u8g2.drawFrame(10, height, displaywidth-20, height+text_height);
+    height += 5;
+
+    u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Einen Moment")/2, height, "Einen Moment");
+    height += text_height+1;
 
     u8g2.sendBuffer();
   }
