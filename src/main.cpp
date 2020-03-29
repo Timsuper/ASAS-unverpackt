@@ -6,9 +6,10 @@
 #include <HX711.h> //Wiegezelle
 #include <U8g2lib.h> //Display
 
-#include <loadcell.hpp>
 #include <rfid.hpp>
 #include <display.hpp>
+#include <loadcell.hpp>
+#include <ultrasound.hpp>
 
 /*
 Pinout Arduino Mega
@@ -22,19 +23,23 @@ frei waelbar:
 SS/SDA - 53
 
 Eigene:
-Kontaktschalter - D18 INPUT PULLUP
+Kontaktschalter - D18 INPUT
 Schlosspin - D7 OUTPUT
 
 Mögliche Optimierungen:
 - millis() Code gegen overflows umschreiben
 */
 
-String product_name = "Test";
+#define PIN_DOORLOCK 7
+#define PIN_CONTACT 18
+
+#define USE_ULTRASOUND false
+#define USE_LOADCELL true
+
+const String product_name = "Test";
+
 const float price_per_g = 0.1;
 const int price_per_X_g = 100;
-
-const int doorlock_pin = 7;
-const int contactpin = 18; // erlaubt: 2, 3, 18, 19, 20, 21
 
 volatile bool contactpin_status = true;
 
@@ -42,9 +47,9 @@ int debug_milis_timer = 0;
 
 void open_lock(int time = 100) {
   // Schloss für time ms öffnen
-  digitalWrite(doorlock_pin, true);
+  digitalWrite(PIN_DOORLOCK, true);
   delay(time);
-  digitalWrite(doorlock_pin, false);
+  digitalWrite(PIN_DOORLOCK, false);
 }
 
 void ISR_contactpin_rising() {
@@ -60,12 +65,18 @@ void setup() {
   SPI.begin();
 
   // Schloss Pin
-  pinMode(doorlock_pin, OUTPUT);
-  digitalWrite(doorlock_pin, false);
+  pinMode(PIN_DOORLOCK, OUTPUT);
+  digitalWrite(PIN_DOORLOCK, false);
 
   display.init();
   rfid_helper.init();
-  loadcell.init();
+
+  if (USE_LOADCELL) {
+    loadcell.init();
+  }
+  if (USE_ULTRASOUND) {
+    ultrasound.init();
+  }
 
   debug_milis_timer = millis();
   Serial.println("setup() abgeschlossen");
@@ -114,14 +125,18 @@ void loop() {
 
     display.mode_please_wait(kundennummer);
 
-    // Gewicht ermitteln in loadcell
-    loadcell.tare();
+    if (USE_LOADCELL) {
+      // Gewicht ermitteln in loadcell
+      loadcell.tare();
+    } else if (USE_ULTRASOUND) {
+      double first_distance = ultrasound.messure();
+    }
 
     int messure_time = millis();
     double current_weight = 0;
     float current_price = 0;
 
-    attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_falling, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PIN_CONTACT), ISR_contactpin_falling, FALLING);
 
     // Schloss öffnen
     open_lock();
@@ -134,10 +149,10 @@ void loop() {
     Serial.println("opened");
     // Test ende
 
-    detachInterrupt(digitalPinToInterrupt(contactpin));
+    detachInterrupt(digitalPinToInterrupt(PIN_CONTACT));
 
     // stellt das schließen der Box fest und ändert eine Bool Var
-    attachInterrupt(digitalPinToInterrupt(contactpin), ISR_contactpin_rising, RISING);
+    attachInterrupt(digitalPinToInterrupt(PIN_CONTACT), ISR_contactpin_rising, RISING);
 
     // Bis die Box geschlossen wird verbleibt das Programm hier
     while (contactpin_status == false) {
@@ -145,25 +160,39 @@ void loop() {
       // messure_time == new_messure_time ist nur beim ersten mal gleich!
       // dies sorgt dafür, dass die erste Messung sofort erfolgt
       if (int new_messure_time = millis()-messure_time >= 1000 || messure_time == new_messure_time) {
-        // Gewicht kontinuierlich ermitteln
-        // Zeigt dem Kunden Informationen während der Entnahme
-        current_weight = abs(loadcell.get_units());
-        // Preisberechnung kontinuierlich
-        current_price = abs(current_weight * price_per_g);
-        messure_time = new_messure_time;
+        if (USE_LOADCELL) {
+          // Gewicht kontinuierlich ermitteln
+          // Zeigt dem Kunden Informationen während der Entnahme
+          current_weight = abs(loadcell.get_units());
+          // Preisberechnung kontinuierlich
+          current_price = abs(current_weight * price_per_g);
+          messure_time = new_messure_time;
+        } else if (USE_ULTRASOUND) {
+          double current_distance = ultrasound.messure();
+          current_weight = 0;
+          current_price = 0;
+          messure_time = new_messure_time;
+        }
         display.mode_opened_case(kundennummer, current_price, current_weight);
       }
     }
 
     display.mode_please_wait(kundennummer);
 
-    detachInterrupt(digitalPinToInterrupt(contactpin));
+    detachInterrupt(digitalPinToInterrupt(PIN_CONTACT));
 
-    // Gewicht neu ermitteln in loadcell
-    double final_weight = abs(loadcell.get_units());
-
-    // Preisberechnung final
-    float final_price = abs(final_weight * price_per_g);
+    double final_weight;
+    float final_price;
+    if (USE_LOADCELL) {
+      // Gewicht neu ermitteln in loadcell
+      final_weight = abs(loadcell.get_units());
+      // Preisberechnung final
+      final_price = abs(final_weight * price_per_g);
+    } else if (USE_ULTRASOUND) {
+      double final_distance = ultrasound.messure();
+      final_weight = 0;
+      final_price = 0;
+    }
 
     // Display Abrechnung
     display.mode_closed_case(kundennummer, final_price, final_weight);
