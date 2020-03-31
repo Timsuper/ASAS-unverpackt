@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-#define trigPin 13
-#define echoPin 12
+#define trigPin 23
+#define echoPin 24
 
 class ultrasound_class {
 private:
