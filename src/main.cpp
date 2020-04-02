@@ -40,6 +40,7 @@ const String product_name = "Test";
 
 const float price_per_g = 0.1;
 const int price_per_X_g = 100;
+const float weight_per_1cm_height_g = 40;
 
 volatile bool contactpin_status = true;
 
@@ -125,11 +126,13 @@ void loop() {
 
     display.mode_please_wait(kundennummer);
 
+    double first_distance;
+
     if (USE_LOADCELL) {
       // Gewicht ermitteln in loadcell
       loadcell.tare();
     } else if (USE_ULTRASOUND) {
-      double first_distance = ultrasound.messure();
+      first_distance = ultrasound.get_value();
     }
 
     int messure_time = millis();
@@ -168,9 +171,9 @@ void loop() {
           current_price = abs(current_weight * price_per_g);
           messure_time = new_messure_time;
         } else if (USE_ULTRASOUND) {
-          double current_distance = ultrasound.messure();
-          current_weight = 0;
-          current_price = 0;
+          double current_distance = ultrasound.get_value();
+          current_weight = abs(first_distance-current_distance)*weight_per_1cm_height_g;
+          current_price = abs(current_weight * price_per_g);
           messure_time = new_messure_time;
         }
         display.mode_opened_case(kundennummer, current_price, current_weight);
@@ -189,9 +192,9 @@ void loop() {
       // Preisberechnung final
       final_price = abs(final_weight * price_per_g);
     } else if (USE_ULTRASOUND) {
-      double final_distance = ultrasound.messure();
-      final_weight = 0;
-      final_price = 0;
+      double final_distance = ultrasound.get_value();
+      final_weight = abs(first_distance-final_distance)*weight_per_1cm_height_g;
+      final_price = abs(final_weight * price_per_g);
     }
 
     // Display Abrechnung
