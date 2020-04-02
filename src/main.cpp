@@ -33,16 +33,14 @@ Mögliche Optimierungen:
 #define PIN_DOORLOCK 7
 #define PIN_CONTACT 18
 
-#define USE_ULTRASOUND false
-#define USE_LOADCELL true
+#define USE_LOADCELL false
+#define USE_ULTRASOUND true
 
-const String product_name = "Test";
+const String product_name = "Apfel";
 
-const float price_per_g = 0.1;
-const int price_per_X_g = 100;
+const float price_per_g = 0.00299;
+const int price_per_X_g = 1000;
 const float weight_per_1cm_height_g = 40;
-
-volatile bool contactpin_status = true;
 
 int debug_milis_timer = 0;
 
@@ -53,14 +51,6 @@ void open_lock(int time = 100) {
   digitalWrite(PIN_DOORLOCK, false);
 }
 
-void ISR_contactpin_rising() {
-  contactpin_status = true;
-}
-
-void ISR_contactpin_falling() {
-  contactpin_status = false;
-}
-
 void setup() {
   Serial.begin(9600);
   SPI.begin();
@@ -68,6 +58,8 @@ void setup() {
   // Schloss Pin
   pinMode(PIN_DOORLOCK, OUTPUT);
   digitalWrite(PIN_DOORLOCK, false);
+
+  pinMode(PIN_CONTACT, INPUT);
 
   display.init();
   rfid_helper.init();
@@ -122,7 +114,8 @@ void loop() {
     // (im HEX Format, da kürzer für Display)
     // Bei einer realen Implementation sollten die Karten vorher beschrieben werden!
     String kundennummer;
-    kundennummer = String(rfid_helper.nuidPICC[0], HEX) + " " + String(rfid_helper.nuidPICC[1], HEX) + " " + String(rfid_helper.nuidPICC[2], HEX) + " " + String(rfid_helper.nuidPICC[3], HEX);
+    //kundennummer = String(rfid_helper.nuidPICC[0], HEX) + " " + String(rfid_helper.nuidPICC[1], HEX) + " " + String(rfid_helper.nuidPICC[2], HEX) + " " + String(rfid_helper.nuidPICC[3], HEX);
+    kundennummer = String(rfid_helper.nuidPICC[0], DEC) + " " + String(rfid_helper.nuidPICC[1], DEC) + " " + String(rfid_helper.nuidPICC[2], DEC);
 
     display.mode_please_wait(kundennummer);
 
@@ -139,26 +132,11 @@ void loop() {
     double current_weight = 0;
     float current_price = 0;
 
-    attachInterrupt(digitalPinToInterrupt(PIN_CONTACT), ISR_contactpin_falling, FALLING);
-
     // Schloss öffnen
     open_lock();
 
-    // Test begin
-    while (contactpin_status == true) {
-      Serial.println("closed");
-    }
-
-    Serial.println("opened");
-    // Test ende
-
-    detachInterrupt(digitalPinToInterrupt(PIN_CONTACT));
-
-    // stellt das schließen der Box fest und ändert eine Bool Var
-    attachInterrupt(digitalPinToInterrupt(PIN_CONTACT), ISR_contactpin_rising, RISING);
-
     // Bis die Box geschlossen wird verbleibt das Programm hier
-    while (contactpin_status == false) {
+    do {
       // Sicherstellen, dass nur jede Sekunde gemessen wird
       // messure_time == new_messure_time ist nur beim ersten mal gleich!
       // dies sorgt dafür, dass die erste Messung sofort erfolgt
@@ -178,11 +156,10 @@ void loop() {
         }
         display.mode_opened_case(kundennummer, current_price, current_weight);
       }
-    }
+      delay(100);
+    } while (digitalRead(PIN_CONTACT));
 
     display.mode_please_wait(kundennummer);
-
-    detachInterrupt(digitalPinToInterrupt(PIN_CONTACT));
 
     double final_weight;
     float final_price;

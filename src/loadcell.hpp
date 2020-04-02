@@ -16,8 +16,8 @@ SCK_2 - 5
 class loadcell_class {
 private:
   // Scales eintragen
-  const float cell_1_scale = 1.0;
-  const float cell_2_scale = 1.0;
+  const float cell_1_scale = 223.0017625;
+  const float cell_2_scale = 208.6961375;
 public:
   HX711 loadcell_1;
   HX711 loadcell_2;

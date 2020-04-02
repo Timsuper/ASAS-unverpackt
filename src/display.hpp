@@ -58,7 +58,7 @@ public:
 
     String price_per_X_str;
     if (price_per_X_g == 1000) {
-      price_per_X_str = "1kg";
+      price_per_X_str = "kg";
     } else {
       price_per_X_str = String(price_per_X_g, 10);
       price_per_X_str = price_per_X_str + "g";
@@ -102,13 +102,16 @@ public:
     u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
     height += text_height+1;
 
+    /*
     u8g2.drawStr(5, height, "Preis: ");
     u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
     height += text_height+1;
-
+    */
+    /*
     u8g2.drawStr(5, height, "Gewicht: ");
     u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
     height += text_height+1;
+    */
 
     u8g2.drawFrame(0, height, displaywidth, displayheight-height);
     height += 1;
