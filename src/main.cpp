@@ -1,3 +1,4 @@
+#include <preprocessor.hpp>
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -30,16 +31,10 @@ Mögliche Optimierungen:
 - millis() Code gegen overflows umschreiben
 */
 
-#define PIN_DOORLOCK 7
-#define PIN_CONTACT 18
+const String product_name = "Cornflakes";
 
-#define USE_LOADCELL false
-#define USE_ULTRASOUND true
-
-const String product_name = "Apfel";
-
-const float price_per_g = 0.00299;
-const int price_per_X_g = 1000;
+const float price_per_g = 0.0025;
+const int price_per_X_g = 100;
 const float weight_per_1cm_height_g = 40;
 
 int debug_milis_timer = 0;
@@ -61,6 +56,12 @@ void setup() {
 
   pinMode(PIN_CONTACT, INPUT);
 
+  pinMode(RFID_SS_PIN, OUTPUT);
+  pinMode(DISPLAY_SS_PIN, OUTPUT);
+  
+  pinMode(RFID_RST_PIN, OUTPUT);
+  pinMode(DISPLAY_RST_PIN, OUTPUT);
+
   display.init();
   rfid_helper.init();
 
@@ -72,17 +73,20 @@ void setup() {
   }
 
   debug_milis_timer = millis();
+
   Serial.println("setup() abgeschlossen");
 }
 
 void loop() {
   display.mode_normal(product_name, price_per_X_g, price_per_g*price_per_X_g);
 
-  if (!rfid.PICC_IsNewCardPresent())
-  return;
+  if (!rfid.PICC_IsNewCardPresent()) {
+    return;
+  }
 
-  if (!rfid.PICC_ReadCardSerial())
-  return;
+  if (!rfid.PICC_ReadCardSerial()) {
+    return;
+  }
 
   MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
 
@@ -105,7 +109,7 @@ void loop() {
     rfid_helper.print_nuid(rfid.uid.uidByte, rfid.uid.size);
   }
   else Serial.println(F("Vorherige Karte erkannt"));
-  
+
   // wenn Karte fest hinterlegt
   // kein Anlern-System implementiert
   if (rfid_helper.compare_rfid_bytes(rfid_helper.nuidPICC, rfid_helper.vaild_card_1)) {
@@ -120,12 +124,15 @@ void loop() {
     display.mode_please_wait(kundennummer);
 
     double first_distance;
+    double first_weight;
 
     if (USE_LOADCELL) {
       // Gewicht ermitteln in loadcell
-      loadcell.tare();
+      first_weight = abs(loadcell.get_units());
     } else if (USE_ULTRASOUND) {
       first_distance = ultrasound.get_value();
+      Serial.print("first_dist: ");
+      Serial.print(first_distance);
     }
 
     int messure_time = millis();
@@ -134,6 +141,13 @@ void loop() {
 
     // Schloss öffnen
     open_lock();
+
+    if (USE_ULTRASOUND) {
+      display.mode_take_product(kundennummer);
+      while (digitalRead(PIN_CONTACT) == 0) {
+          delay(20);
+      }
+    }
 
     // Bis die Box geschlossen wird verbleibt das Programm hier
     do {
@@ -144,7 +158,7 @@ void loop() {
         if (USE_LOADCELL) {
           // Gewicht kontinuierlich ermitteln
           // Zeigt dem Kunden Informationen während der Entnahme
-          current_weight = abs(loadcell.get_units());
+          current_weight = abs(loadcell.get_units() - first_weight);
           // Preisberechnung kontinuierlich
           current_price = abs(current_weight * price_per_g);
           messure_time = new_messure_time;
@@ -162,14 +176,20 @@ void loop() {
     display.mode_please_wait(kundennummer);
 
     double final_weight;
+    double last_messure;
+    double final_distance;
     float final_price;
     if (USE_LOADCELL) {
       // Gewicht neu ermitteln in loadcell
-      final_weight = abs(loadcell.get_units());
+      last_messure = loadcell.get_units();
+      final_weight = abs(last_messure - first_weight);
       // Preisberechnung final
       final_price = abs(final_weight * price_per_g);
     } else if (USE_ULTRASOUND) {
-      double final_distance = ultrasound.get_value();
+      final_distance = ultrasound.get_value();
+      Serial.print("  last_dist:  ");
+      Serial.println(final_distance);
+
       final_weight = abs(first_distance-final_distance)*weight_per_1cm_height_g;
       final_price = abs(final_weight * price_per_g);
     }
@@ -180,7 +200,7 @@ void loop() {
     delay(5000);
 
     // Gewicht 0 oder niedrig? -> Box leer anzeigen
-    if (final_weight <= 100 && final_weight >= 0) {
+    if ((USE_LOADCELL && last_messure <= 100 && last_messure >= 0) || (USE_ULTRASOUND && final_distance > 40)) {
         display.mode_empty_container();
         while (true) {}
     }
@@ -192,5 +212,5 @@ void loop() {
   }
 
   rfid.PICC_HaltA();
-  rfid.PCD_StopCrypto1(); // bei realer Implementation andere verwenden, da bereits genackt
+  rfid.PCD_StopCrypto1(); // bei realer Implementation andere verwenden, da bereits genackt    
 }

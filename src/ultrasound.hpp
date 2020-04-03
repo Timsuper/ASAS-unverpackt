@@ -1,17 +1,10 @@
 #include <Arduino.h>
 
-#define trigPin_1 23
-#define echoPin_1 24
-
-#define trigPin_2 25
-#define echoPin_2 26
-
 class ultrasound_class {
-static ultrasound_class self;
 private:
     
 public:
-    const unsigned int allowed_sensor_tolerance = 1; // erlaubter maximaler Unterschied, bevor eine Messreihe ungültig ist
+    const int allowed_sensor_tolerance = 5; // erlaubter maximaler Unterschied, bevor eine Messreihe ungültig ist
 
     void init() {
         pinMode(trigPin_1, OUTPUT);
@@ -19,6 +12,8 @@ public:
 
         pinMode(trigPin_2, OUTPUT);
         pinMode(echoPin_2, INPUT);
+
+        Serial.println("Ultrasound init() abgeschlossen");
     }
 
     double messure(int trigPin, int echoPin) {
@@ -52,43 +47,43 @@ public:
        return distance; // in cm
     }
 
-    double get_value(unsigned int samples = 10) {
+    double get_value(unsigned int samples = 5) {
         int messurements_sensor_1[samples];
         int messurements_sensor_2[samples];
+
         bool invalid_data_pairs[samples];
-        double average_value_sum = 0;
         unsigned int counter_invalid = 0;
 
-        for (size_t i = 1; i <= samples; i++) {
-            messurements_sensor_1[i] = self.messure(trigPin_1, echoPin_1);
-            messurements_sensor_2[i] = self.messure(trigPin_2, echoPin_2);
-            delay(50);
-            if (messurements_sensor_1[i] <= 0 || messurements_sensor_2[i] <= 0 || (abs(messurements_sensor_1[i] - messurements_sensor_2[i]) >= allowed_sensor_tolerance)) {
+        double sum_1 = 0;
+        double sum_2 = 0;
+
+        for (int i = 0; i < samples; i++) {
+            messurements_sensor_1[i] = messure(trigPin_1, echoPin_1);
+            delay(10);
+            messurements_sensor_2[i] = messure(trigPin_2, echoPin_2);
+            delay(10);
+            
+            if (abs(messurements_sensor_1[i] - messurements_sensor_2[i]) >= allowed_sensor_tolerance) {
                 invalid_data_pairs[i] = true;
                 counter_invalid++;
             } else {
                 invalid_data_pairs[i] = false;
             }
+
             if (invalid_data_pairs[i] == false) {
-                average_value_sum += (messurements_sensor_1[i] + messurements_sensor_2[i]) / 2;
+                sum_1 += messurements_sensor_1[i];
+                sum_2 += messurements_sensor_2[i];
             }
         }
-
-        for (size_t i = 1; i <= samples; i++) {
-            Serial.print("s1: ");
-            Serial.print(messurements_sensor_1[i]);
-            Serial.print("  s2: ");
-            Serial.println(messurements_sensor_2[i]);
-        }
-
-        Serial.print("counter_invalid: ");
-        Serial.println(counter_invalid);
-
-        if (counter_invalid >= samples * 0.25) {
+        
+        if (counter_invalid > samples/4 && false) {
+            Serial.println();
             Serial.println("too many invalid ultrasound messures");
+            Serial.print("counter_invalid_messures: ");
+            Serial.println(counter_invalid);
             return -1;
         } else {
-            return average_value_sum / samples;
+            return (sum_1 + sum_2) / (samples * 2);
         }
     }
 } ultrasound;

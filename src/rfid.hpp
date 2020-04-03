@@ -13,11 +13,8 @@ frei waelbar:
 SS/SDA - 53
 RST - 9
 */
-
-#define SS_PIN 53 // Slave-Select / SDA (RFID)
-#define RST_PIN 9 // Rest (RFID)
  
-MFRC522 rfid(SS_PIN, RST_PIN); // Klasseninstanz
+MFRC522 rfid(RFID_SS_PIN, RFID_RST_PIN); // Klasseninstanz
 
 MFRC522::MIFARE_Key key;
 

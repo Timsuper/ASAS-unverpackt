@@ -1,3 +1,4 @@
+#include <preprocessor.hpp>
 #include <Arduino.h>
 #include <SPI.h>
 #include <string.h>
@@ -17,7 +18,11 @@ RST - D8
 */
 
 //Full Buffer
-U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R0, 53, 8);
+#if USE_ULTRASOUND == true
+  U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R2, DISPLAY_SS_PIN, DISPLAY_RST_PIN);
+#else
+  U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R0, DISPLAY_SS_PIN, DISPLAY_RST_PIN);
+#endif
 
 //Picture Loop
 // U8G2_ST7920_128X64_1_HW_SPI u8g2(U8G2_R0, /* CS=*/ 53, /* reset=*/ 8);
@@ -50,12 +55,12 @@ public:
     u8g2.setFontDirection(0);
     u8g2.setBitmapMode(1);
     u8g2.setFontMode(1);
+
     return;
   }
 
   void mode_normal(String productname = "Produktname", int price_per_X_g = 100, float price = 0.00, String lower_text = "Bitte Karte auflegen") {
     prepare();
-
     String price_per_X_str;
     if (price_per_X_g == 1000) {
       price_per_X_str = "kg";
@@ -73,8 +78,9 @@ public:
     
     u8g2.setFont(u8g2_font_7x14B_mf);
     u8g2.drawStr(5, 0, productname.c_str());
+    height += u8g2.getAscent()+(-u8g2.getDescent())+4;
+
     u8g2.setFont(u8g2_font_6x13_me);
-    height += text_height+3;
 
     u8g2.drawStr(5, height, ("Preis / " + price_per_X_str + ":").c_str());
     height += text_height+5;
@@ -102,16 +108,15 @@ public:
     u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
     height += text_height+1;
 
-    /*
-    u8g2.drawStr(5, height, "Preis: ");
-    u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
-    height += text_height+1;
-    */
-    /*
-    u8g2.drawStr(5, height, "Gewicht: ");
-    u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
-    height += text_height+1;
-    */
+    if (USE_ULTRASOUND) {
+      u8g2.drawStr(5, height, "Preis: ");
+      u8g2.drawStr(displaywidth-u8g2.getStrWidth((estimated_price_str + " Euro").c_str()), height, (estimated_price_str + " Euro").c_str());
+      height += text_height+1;
+
+      u8g2.drawStr(5, height, "Gewicht: ");
+      u8g2.drawStr(displaywidth-u8g2.getStrWidth((String(estimated_weight) + " g").c_str()), height, (String(estimated_weight) + " g").c_str());
+      height += text_height+1;
+    }
 
     u8g2.drawFrame(0, height, displaywidth, displayheight-height);
     height += 1;
@@ -119,8 +124,15 @@ public:
     u8g2.drawStr(5, height, "Produkt entnehmen");
     height += text_height+1;
 
-    u8g2.drawStr(5, height, "und Box schliessen.");
-    height += text_height+1;
+    if (USE_ULTRASOUND) {
+      u8g2.drawStr(5, height, "dann Hebel loslassen.");
+      height += text_height+1;
+    }
+
+    if (USE_LOADCELL) {
+      u8g2.drawStr(5, height, "und Box schliessen.");
+      height += text_height+1;
+    }
 
     u8g2.sendBuffer();
   }
@@ -140,6 +152,26 @@ public:
     height += 5;
 
     u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Einen Moment")/2, height, "Einen Moment");
+    height += text_height+1;
+
+    u8g2.sendBuffer();
+  }
+
+  void mode_take_product(String kundennummer = "KdNr") {
+    prepare();
+    const int text_height = u8g2.getAscent()+(-u8g2.getDescent());
+
+    int height = 0;
+
+    u8g2.drawStr(5, 0, "Kundennr:");
+    u8g2.drawStr(displaywidth-u8g2.getStrWidth(kundennummer.c_str()), height, kundennummer.c_str());
+    height += text_height+1;
+
+    height ++;
+    u8g2.drawFrame(10, height, displaywidth-20, height+text_height);
+    height += 5;
+
+    u8g2.drawStr(displaywidth/2-u8g2.getStrWidth("Hebel ziehen")/2, height, "Hebel ziehen");
     height += text_height+1;
 
     u8g2.sendBuffer();
