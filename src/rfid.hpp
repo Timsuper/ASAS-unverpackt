@@ -1,20 +1,9 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#include <MFRC522.h> //RFID
-
-/*
-SPI:
-MISO - 50
-MOSI - 51
-SCK - 52
-
-frei waelbar:
-SS/SDA - 53
-RST - 9
-*/
+#include <MFRC522.h> // RFID
  
-MFRC522 rfid(RFID_SS_PIN, RFID_RST_PIN); // Klasseninstanz
+MFRC522 rfid(RFID_SS_PIN, RFID_RST_PIN); // Klasseninstanz; benutzt HW SPI
 
 MFRC522::MIFARE_Key key;
 

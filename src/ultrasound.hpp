@@ -2,19 +2,7 @@
 
 class ultrasound_class {
 private:
-    
-public:
     const int allowed_sensor_tolerance = 5; // erlaubter maximaler Unterschied, bevor eine Messreihe ungültig ist
-
-    void init() {
-        pinMode(trigPin_1, OUTPUT);
-        pinMode(echoPin_1, INPUT);
-
-        pinMode(trigPin_2, OUTPUT);
-        pinMode(echoPin_2, INPUT);
-
-        Serial.println("Ultrasound init() abgeschlossen");
-    }
 
     double messure(int trigPin, int echoPin) {
         unsigned long duration, distance;
@@ -46,8 +34,18 @@ public:
        distance = (duration / 2) * 0.03435;
        return distance; // in cm
     }
+public:
+    void init() {
+        pinMode(trigPin_1, OUTPUT);
+        pinMode(echoPin_1, INPUT);
 
-    double get_value(unsigned int samples = 5) {
+        pinMode(trigPin_2, OUTPUT);
+        pinMode(echoPin_2, INPUT);
+
+        Serial.println("Ultrasound init() abgeschlossen");
+    }
+
+    double get_one_avg_value(unsigned int samples = 5) {
         int messurements_sensor_1[samples];
         int messurements_sensor_2[samples];
 
@@ -57,7 +55,7 @@ public:
         double sum_1 = 0;
         double sum_2 = 0;
 
-        for (int i = 0; i < samples; i++) {
+        for (unsigned int i = 0; i < samples; i++) {
             messurements_sensor_1[i] = messure(trigPin_1, echoPin_1);
             delay(10);
             messurements_sensor_2[i] = messure(trigPin_2, echoPin_2);
@@ -76,12 +74,14 @@ public:
             }
         }
         
-        if (counter_invalid > samples/4 && false) {
+        if (counter_invalid > samples/4) {
             Serial.println();
             Serial.println("too many invalid ultrasound messures");
             Serial.print("counter_invalid_messures: ");
             Serial.println(counter_invalid);
-            return -1;
+            return (sum_1 + sum_2) / (samples * 2);
+            // Hier wäre zu erörten wie im Fehlerfall verfahren wird.
+            // ggf. wird die weitere Ausgabe unterbunden und eine Fehlermeldung ausgegeben
         } else {
             return (sum_1 + sum_2) / (samples * 2);
         }

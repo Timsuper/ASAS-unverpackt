@@ -17,6 +17,7 @@ SCK_2 - 5
 class loadcell_class {
 private:
   // Scales eintragen
+  // Ermittelt aus Versuch
   const float cell_1_scale = 223.0017625;
   const float cell_2_scale = 208.6961375;
 public:

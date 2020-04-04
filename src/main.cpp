@@ -3,33 +3,14 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#include <MFRC522.h> //RFID
-#include <HX711.h> //Wiegezelle
-#include <U8g2lib.h> //Display
+#include <MFRC522.h> // RFID
+#include <HX711.h> // Wiegezelle
+#include <U8g2lib.h> // Display
 
 #include <rfid.hpp>
 #include <display.hpp>
 #include <loadcell.hpp>
 #include <ultrasound.hpp>
-
-/*
-Pinout Arduino Mega
-
-SPI:
-MISO - 50
-MOSI - 51
-SCK - 52
-
-frei waelbar:
-SS/SDA - 53
-
-Eigene:
-Kontaktschalter - D18 INPUT
-Schlosspin - D7 OUTPUT
-
-Mögliche Optimierungen:
-- millis() Code gegen overflows umschreiben
-*/
 
 const String product_name = "Cornflakes";
 
@@ -55,12 +36,6 @@ void setup() {
   digitalWrite(PIN_DOORLOCK, false);
 
   pinMode(PIN_CONTACT, INPUT);
-
-  pinMode(RFID_SS_PIN, OUTPUT);
-  pinMode(DISPLAY_SS_PIN, OUTPUT);
-  
-  pinMode(RFID_RST_PIN, OUTPUT);
-  pinMode(DISPLAY_RST_PIN, OUTPUT);
 
   display.init();
   rfid_helper.init();
@@ -130,7 +105,7 @@ void loop() {
       // Gewicht ermitteln in loadcell
       first_weight = abs(loadcell.get_units());
     } else if (USE_ULTRASOUND) {
-      first_distance = ultrasound.get_value();
+      first_distance = ultrasound.get_one_avg_value();
       Serial.print("first_dist: ");
       Serial.print(first_distance);
     }
@@ -163,7 +138,7 @@ void loop() {
           current_price = abs(current_weight * price_per_g);
           messure_time = new_messure_time;
         } else if (USE_ULTRASOUND) {
-          double current_distance = ultrasound.get_value();
+          double current_distance = ultrasound.get_one_avg_value();
           current_weight = abs(first_distance-current_distance)*weight_per_1cm_height_g;
           current_price = abs(current_weight * price_per_g);
           messure_time = new_messure_time;
@@ -186,7 +161,7 @@ void loop() {
       // Preisberechnung final
       final_price = abs(final_weight * price_per_g);
     } else if (USE_ULTRASOUND) {
-      final_distance = ultrasound.get_value();
+      final_distance = ultrasound.get_one_avg_value();
       Serial.print("  last_dist:  ");
       Serial.println(final_distance);
 

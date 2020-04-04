@@ -3,48 +3,20 @@
 #include <SPI.h>
 #include <string.h>
 
-#include <U8g2lib.h> //Display
+#include <U8g2lib.h> // Display
 
-/*
-SPI:
-MISO - nicht belegt
-MOSI/RW - 51
-SCK - 52
-
-frei waelbar:
-V0, Contrast - D7 (PWM / Poti)
-CS, RS, D/I, SS, SDA - D53
-RST - D8
-*/
-
-//Full Buffer
+// Full Buffer
 #if USE_ULTRASOUND == true
-  U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R2, DISPLAY_SS_PIN, DISPLAY_RST_PIN);
+  // Parameterreihenfolge: rotation, clock, data, cs [, reset]
+  U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R2, DISPLAY_CLOCK_PIN, DISPLAY_DATA_PIN, DISPLAY_SS_PIN, DISPLAY_RST_PIN);
 #else
-  U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R0, DISPLAY_SS_PIN, DISPLAY_RST_PIN);
+  U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R0, DISPLAY_CLOCK_PIN, DISPLAY_DATA_PIN, DISPLAY_SS_PIN, DISPLAY_RST_PIN);
 #endif
-
-//Picture Loop
-// U8G2_ST7920_128X64_1_HW_SPI u8g2(U8G2_R0, /* CS=*/ 53, /* reset=*/ 8);
 
 class display_class {
 private:
-
-public:
   int displayheight = u8g2.getDisplayHeight();
   int displaywidth = u8g2.getDisplayWidth();
-
-  void init() {
-    Serial.print("display -> ");
-    Serial.print("height: ");
-    Serial.print(displayheight);
-    Serial.print(" width: ");
-    Serial.println(displaywidth);
-
-    u8g2.begin();
-    Serial.println("display init() abgeschlossen");
-    return;
-  }
 
   void prepare() {
     u8g2.clearBuffer();
@@ -56,6 +28,18 @@ public:
     u8g2.setBitmapMode(1);
     u8g2.setFontMode(1);
 
+    return;
+  }
+public:
+  void init() {
+    Serial.print("display -> ");
+    Serial.print("height: ");
+    Serial.print(displayheight);
+    Serial.print(" width: ");
+    Serial.println(displaywidth);
+
+    u8g2.begin();
+    Serial.println("display init() abgeschlossen");
     return;
   }
 
